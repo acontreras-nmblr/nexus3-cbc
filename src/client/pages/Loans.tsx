@@ -218,6 +218,43 @@ function StepPersonalInfo({
     onChange((prev) => ({ ...prev, ...patch }));
   }
 
+  // Use local state for each dropdown so partial selections persist
+  const initParts = (() => {
+    if (!personal.dateOfBirth) return { m: "", d: "", y: "" };
+    const [y, m, d] = personal.dateOfBirth.split("-");
+    return { m, d, y };
+  })();
+  const [dobMonth, setDobMonth] = useState(initParts.m);
+  const [dobDay, setDobDay] = useState(initParts.d);
+  const [dobYear, setDobYear] = useState(initParts.y);
+
+  function updateDob(part: "month" | "day" | "year", value: string) {
+    const m = part === "month" ? value : dobMonth;
+    const d = part === "day" ? value : dobDay;
+    const y = part === "year" ? value : dobYear;
+    if (part === "month") setDobMonth(value);
+    if (part === "day") setDobDay(value);
+    if (part === "year") setDobYear(value);
+    if (m && d && y) {
+      update({ dateOfBirth: `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}` });
+    }
+  }
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 80 }, (_, i) => currentYear - 18 - i);
+  const daysInMonth = dobMonth && dobYear
+    ? new Date(parseInt(dobYear || String(currentYear)), parseInt(dobMonth), 0).getDate()
+    : 31;
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  const selectClass =
+    "flex-1 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-900 focus:border-primary focus:ring-1 focus:ring-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 appearance-none";
+
   return (
     <main className="flex-1 overflow-y-auto pb-32">
       <div className="px-4 py-6 space-y-6">
@@ -240,12 +277,40 @@ function StepPersonalInfo({
           <label className="mb-2 block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             Date of Birth
           </label>
-          <input
-            type="date"
-            value={personal.dateOfBirth}
-            onChange={(e) => update({ dateOfBirth: e.target.value })}
-            className="w-full rounded-xl border border-slate-200 bg-white p-4 text-base text-slate-900 focus:border-primary focus:ring-1 focus:ring-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 placeholder:text-slate-400"
-          />
+          <div className="flex gap-3">
+            <select
+              value={dobMonth}
+              onChange={(e) => updateDob("month", e.target.value)}
+              className={selectClass}
+            >
+              <option value="" disabled>Month</option>
+              {months.map((m, i) => (
+                <option key={m} value={String(i + 1).padStart(2, "0")}>{m}</option>
+              ))}
+            </select>
+            <select
+              value={dobDay}
+              onChange={(e) => updateDob("day", e.target.value)}
+              className={selectClass}
+              style={{ maxWidth: "5.5rem" }}
+            >
+              <option value="" disabled>Day</option>
+              {days.map((d) => (
+                <option key={d} value={String(d).padStart(2, "0")}>{d}</option>
+              ))}
+            </select>
+            <select
+              value={dobYear}
+              onChange={(e) => updateDob("year", e.target.value)}
+              className={selectClass}
+              style={{ maxWidth: "6.5rem" }}
+            >
+              <option value="" disabled>Year</option>
+              {years.map((y) => (
+                <option key={y} value={String(y)}>{y}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Contact Number */}
