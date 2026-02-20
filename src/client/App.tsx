@@ -7,6 +7,7 @@ import { BuyLoad } from "./pages/BuyLoad.js";
 import { Cards } from "./pages/Cards.js";
 import { ApplyCard } from "./pages/ApplyCard.js";
 import { Rewards } from "./pages/Rewards.js";
+import { Loans } from "./pages/Loans.js";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 
@@ -34,6 +35,7 @@ export const App = () => {
         <Route path="/buy-load" element={<RequireAuth><BuyLoad /></RequireAuth>} />
         <Route path="/apply-card" element={<RequireAuth><ApplyCard /></RequireAuth>} />
         <Route path="/rewards" element={<RequireAuth><Rewards /></RequireAuth>} />
+        <Route path="/loans" element={<RequireAuth><Loans /></RequireAuth>} />
       </Routes>
     </BrowserRouter>
   );

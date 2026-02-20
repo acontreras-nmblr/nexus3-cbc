@@ -8,6 +8,7 @@ const quickActions = [
   { icon: "sync_alt", label: "Transfer", to: "/transfer" },
   { icon: "credit_card", label: "Cards", to: "/cards" },
   { icon: "card_giftcard", label: "Rewards", to: "/rewards" },
+  { icon: "account_balance", label: "Loans", to: "/loans" },
 ];
 
 export function Dashboard() {
@@ -97,7 +98,7 @@ export function Dashboard() {
       {/* Quick Actions Grid */}
       <div className="mb-8">
         <h3 className="text-lg font-bold mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {quickActions.map((action) => (
             <div key={action.label} className="flex flex-col items-center gap-2">
               <button
