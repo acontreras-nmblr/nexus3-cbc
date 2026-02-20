@@ -125,7 +125,7 @@ export function BuyLoad() {
                 disabled={!canProceed}
                 className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
               >
-                Review Transaction
+                Next
               </button>
             </div>
           </div>
