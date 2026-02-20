@@ -4,6 +4,7 @@ import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
 import { healthcheckRouter } from "./controllers/healthcheck.js";
+import { authRouter } from "./controllers/auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,6 +22,7 @@ export const createServer = () => {
 
   // API routes
   app.use("/api", healthcheckRouter);
+  app.use("/api", authRouter);
 
   // Serve frontend static files in production
   if (process.env.NODE_ENV === "production") {
