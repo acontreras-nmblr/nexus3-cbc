@@ -13,8 +13,8 @@
     "start": "node dist/server/index.js",
     "preview": "vite preview --config vite.config.ts",
     "lint": "eslint . --ext .ts,.tsx",
-    "db:migrate-up": "node-pg-migrate up --migration-file-language ts --migrations-dir db/migrations",
-    "db:migrate-down": "node-pg-migrate down --migration-file-language ts --migrations-dir db/migrations",
+    "db:migrate-up": "node --env-file=.env ./node_modules/.bin/node-pg-migrate up --migration-file-language ts --migrations-dir db/migrations",
+    "db:migrate-down": "node --env-file=.env ./node_modules/.bin/node-pg-migrate down --migration-file-language ts --migrations-dir db/migrations",
     "db:migrate-new": "node-pg-migrate create --migration-file-language ts --migrations-dir db/migrations"
   },
   "dependencies": {
