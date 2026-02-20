@@ -14,6 +14,7 @@ const quickActions = [
 export function Dashboard() {
   const navigate = useNavigate();
   const [balanceVisible, setBalanceVisible] = useState(true);
+  const [showDetails, setShowDetails] = useState(false);
 
   const transactions = getTransactions();
   const totalPoints = getTotalPoints();
@@ -83,14 +84,49 @@ export function Dashboard() {
               : "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"}
           </span>
         </div>
-        <div className="mt-8 flex gap-3">
-          <button className="flex-1 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white text-sm font-bold py-2.5 rounded-lg border border-white/20 transition-all">
-            View Details
-          </button>
-          <button className="flex-1 bg-white text-primary text-sm font-bold py-2.5 rounded-lg transition-all hover:bg-slate-50">
-            Add Money
+        <div className="mt-8">
+          <button
+            onClick={() => setShowDetails((v) => !v)}
+            className="w-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white text-sm font-bold py-2.5 rounded-lg border border-white/20 transition-all flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-base">
+              {showDetails ? "expand_less" : "expand_more"}
+            </span>
+            {showDetails ? "Hide Details" : "View Details"}
           </button>
         </div>
+        {/* Account Details Panel */}
+        {showDetails && (
+          <div className="mt-4 bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/10 space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-white/70">Account Holder</span>
+              <span className="font-semibold">{fullName}</span>
+            </div>
+            <div className="h-px bg-white/10" />
+            <div className="flex justify-between">
+              <span className="text-white/70">Account Number</span>
+              <span className="font-semibold">{accountNumber}</span>
+            </div>
+            <div className="h-px bg-white/10" />
+            <div className="flex justify-between">
+              <span className="text-white/70">Account Type</span>
+              <span className="font-semibold">Savings Account</span>
+            </div>
+            <div className="h-px bg-white/10" />
+            <div className="flex justify-between">
+              <span className="text-white/70">Reward Points</span>
+              <span className="font-semibold">{totalPoints.toLocaleString()} pts</span>
+            </div>
+            <div className="h-px bg-white/10" />
+            <div className="flex justify-between">
+              <span className="text-white/70">Status</span>
+              <span className="font-semibold flex items-center gap-1">
+                <span className="size-2 bg-green-400 rounded-full inline-block" />
+                Active
+              </span>
+            </div>
+          </div>
+        )}
         {/* Abstract background shape */}
         <div className="absolute -right-8 -bottom-8 size-48 bg-white/5 rounded-full blur-3xl" />
       </div>
