@@ -566,10 +566,10 @@ function StepSuccess({
           background: "radial-gradient(circle at center, rgba(46,125,50,0.1) 0%, transparent 70%)",
         }}
       >
-        <div className="w-24 h-24 bg-success/10 rounded-full flex items-center justify-center mb-4">
-          <div className="w-16 h-16 bg-success rounded-full flex items-center justify-center shadow-lg shadow-success/20">
-            <span className="material-symbols-outlined text-white text-4xl font-bold">check</span>
-          </div>
+        <div className="bg-emerald-100 dark:bg-emerald-900/30 p-6 rounded-full mb-4">
+          <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400 !text-6xl">
+            check_circle
+          </span>
         </div>
         <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
           Transfer Successful!
