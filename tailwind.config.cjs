@@ -2,16 +2,16 @@
 module.exports = {
   darkMode: "class",
   content: ["./src/client/**/*.{js,ts,jsx,tsx}", "./index.html"],
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
-        primary: "#c6102e",
-        success: "#2e7d32",
+        primary: "#c0162d",
         "background-light": "#f8f6f6",
-        "background-dark": "#221013",
+        "background-dark": "#211113",
       },
       fontFamily: {
-        display: ["Manrope", "sans-serif"],
+        display: ["Public Sans", "sans-serif"],
       },
       borderRadius: {
         DEFAULT: "0.25rem",
