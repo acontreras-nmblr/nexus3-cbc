@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { recordBillPayment, saveFavoriteBiller, downloadReceipt } from "../mockData";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -55,6 +56,7 @@ export function PayBills() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBiller, setSelectedBiller] = useState<Biller | null>(null);
   const [form, setForm] = useState<PaymentForm>({ accountNumber: "", amount: "" });
+  const [earnedPoints, setEarnedPoints] = useState(0);
 
   const amount = parseFloat(form.amount) || 0;
   const fee = 15;
@@ -124,11 +126,16 @@ export function PayBills() {
           <SuccessStep
             biller={selectedBiller}
             amount={amount}
+            fee={fee}
+            total={total}
+            accountNumber={form.accountNumber}
+            earnedPoints={earnedPoints}
             onGoHome={() => navigate("/")}
             onPayAnother={() => {
               setStep("browse");
               setSelectedBiller(null);
               setForm({ accountNumber: "", amount: "" });
+              setEarnedPoints(0);
             }}
           />
         )}
@@ -149,7 +156,13 @@ export function PayBills() {
           <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
             <div className="flex flex-col gap-3 w-full">
               <button
-                onClick={() => setStep("success")}
+                onClick={() => {
+                  if (selectedBiller) {
+                    const pts = recordBillPayment(selectedBiller.name, total);
+                    setEarnedPoints(pts);
+                  }
+                  setStep("success");
+                }}
                 className="flex items-center justify-center rounded-lg h-14 bg-primary hover:bg-primary/90 text-white text-base font-bold transition-all shadow-md active:scale-[0.98]"
               >
                 Confirm Payment
@@ -521,11 +534,19 @@ function ReviewStep({
 function SuccessStep({
   biller,
   amount,
+  fee,
+  total,
+  accountNumber,
+  earnedPoints,
   onGoHome,
   onPayAnother,
 }: {
   biller: Biller;
   amount: number;
+  fee: number;
+  total: number;
+  accountNumber: string;
+  earnedPoints: number;
   onGoHome: () => void;
   onPayAnother: () => void;
 }) {
@@ -533,6 +554,37 @@ function SuccessStep({
   const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
   const refNo = `CBC-${Date.now().toString().slice(-8)}`;
+  const [favSaved, setFavSaved] = useState(false);
+
+  function handleSaveFavorite() {
+    const saved = saveFavoriteBiller({
+      name: biller.name,
+      category: biller.category,
+      accountNumber,
+    });
+    setFavSaved(true);
+    if (!saved) {
+      // Already exists, still show as saved
+    }
+  }
+
+  function handleDownloadReceipt() {
+    downloadReceipt({
+      title: "BILL PAYMENT RECEIPT",
+      refNo,
+      date: dateStr,
+      time: timeStr,
+      rows: [
+        { label: "Biller", value: biller.name },
+        { label: "Category", value: biller.category },
+        { label: "Account No.", value: accountNumber },
+        { label: "Payment Amount", value: `PHP ${amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}` },
+        { label: "Convenience Fee", value: `PHP ${fee.toFixed(2)}` },
+        ...(earnedPoints > 0 ? [{ label: "Rewards Earned", value: `+${earnedPoints} pts` }] : []),
+      ],
+      total: { label: "Total Amount", value: `PHP ${total.toLocaleString("en-PH", { minimumFractionDigits: 2 })}` },
+    });
+  }
 
   return (
     <main className="flex-1 overflow-y-auto flex flex-col">
@@ -550,6 +602,16 @@ function SuccessStep({
           Your transaction has been processed.
         </p>
       </div>
+
+      {/* Rewards Earned Banner */}
+      {earnedPoints > 0 && (
+        <div className="mx-4 mb-2 flex items-center gap-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3">
+          <span className="material-symbols-outlined text-green-600 dark:text-green-400">stars</span>
+          <p className="text-green-700 dark:text-green-400 text-sm font-semibold">
+            You earned <span className="font-extrabold">{earnedPoints} points</span> (2% reward)!
+          </p>
+        </div>
+      )}
 
       {/* Amount */}
       <div className="px-4 py-6 text-center">
@@ -594,15 +656,30 @@ function SuccessStep({
 
       {/* Save to Favorites */}
       <div className="px-4 mb-8">
-        <button className="w-full flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:bg-primary/5 transition-colors group">
-          <span className="material-symbols-outlined">favorite</span>
-          <span className="font-bold">Save Biller to Favorites</span>
+        <button
+          onClick={handleSaveFavorite}
+          disabled={favSaved}
+          className={`w-full flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed transition-colors group ${
+            favSaved
+              ? "border-green-300 bg-green-50 dark:bg-green-900/20 text-green-600 cursor-default"
+              : "border-primary/30 text-primary hover:bg-primary/5"
+          }`}
+        >
+          <span className="material-symbols-outlined">
+            {favSaved ? "check_circle" : "favorite"}
+          </span>
+          <span className="font-bold">
+            {favSaved ? "Biller Saved to Favorites!" : "Save Biller to Favorites"}
+          </span>
         </button>
       </div>
 
       {/* Download Receipt */}
       <div className="px-4 mb-4 flex justify-center">
-        <button className="flex items-center gap-2 text-primary font-bold text-sm">
+        <button
+          onClick={handleDownloadReceipt}
+          className="flex items-center gap-2 text-primary font-bold text-sm"
+        >
           <span className="material-symbols-outlined text-[20px]">download</span>
           Download Official Receipt
         </button>

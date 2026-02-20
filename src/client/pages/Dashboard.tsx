@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getTransactions, getTotalPoints, getBalance } from "../mockData";
 
 const quickActions = [
   { icon: "payments", label: "Pay Bills", to: "/pay-bills" },
@@ -9,58 +10,43 @@ const quickActions = [
   { icon: "card_giftcard", label: "Rewards", to: "/rewards" },
 ];
 
-interface Transaction {
-  icon: string;
-  iconBg: string;
-  iconColor: string;
-  title: string;
-  date: string;
-  amount: string;
-  amountColor: string;
-}
-
-const recentTransactions: Transaction[] = [
-  {
-    icon: "shopping_bag",
-    iconBg: "bg-primary/10",
-    iconColor: "text-primary",
-    title: "SM Supermarket",
-    date: "Oct 24, 2023 • 2:15 PM",
-    amount: "- 1,240.50",
-    amountColor: "text-slate-900 dark:text-slate-100",
-  },
-  {
-    icon: "download",
-    iconBg: "bg-green-100 dark:bg-green-900/30",
-    iconColor: "text-green-600",
-    title: "Payroll Deposit",
-    date: "Oct 15, 2023 • 9:00 AM",
-    amount: "+ 45,000.00",
-    amountColor: "text-green-600",
-  },
-  {
-    icon: "electric_bolt",
-    iconBg: "bg-primary/10",
-    iconColor: "text-primary",
-    title: "Meralco Payment",
-    date: "Oct 12, 2023 • 4:30 PM",
-    amount: "- 3,500.00",
-    amountColor: "text-slate-900 dark:text-slate-100",
-  },
-];
-
 export function Dashboard() {
   const navigate = useNavigate();
   const [balanceVisible, setBalanceVisible] = useState(true);
 
+  const transactions = getTransactions();
+  const totalPoints = getTotalPoints();
+  const balance = getBalance();
+
+  // Get user from localStorage
+  const userRaw = localStorage.getItem("user");
+  const user = userRaw ? JSON.parse(userRaw) : null;
+  const fullName = user?.fullName ?? "Juan Dela Cruz";
+  const accountNumber = user?.accountNumber ?? "1234-5678-9012";
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
   return (
     <main className="flex-1 overflow-y-auto pb-24 px-4">
       {/* Greeting */}
-      <div className="mt-6 mb-4">
-        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-          Good morning,
-        </p>
-        <h2 className="text-2xl font-bold">Juan Dela Cruz</h2>
+      <div className="mt-6 mb-4 flex items-center justify-between">
+        <div>
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+            Good morning,
+          </p>
+          <h2 className="text-2xl font-bold">{fullName}</h2>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-1 text-slate-500 hover:text-primary text-sm transition-colors"
+        >
+          <span className="material-symbols-outlined text-base">logout</span>
+          Logout
+        </button>
       </div>
 
       {/* Main Account Card */}
@@ -70,10 +56,10 @@ export function Dashboard() {
             <p className="text-white/80 text-xs font-medium uppercase tracking-wider">
               Savings Account
             </p>
-            <p className="text-white font-semibold">1234-5678-9012</p>
+            <p className="text-white font-semibold">{accountNumber}</p>
             <p className="text-white/90 text-[10px] mt-1 flex items-center gap-1">
               <span className="material-symbols-outlined text-[12px]">stars</span>
-              1,250 Points
+              {totalPoints.toLocaleString()} Points
             </p>
           </div>
           <button
@@ -91,7 +77,9 @@ export function Dashboard() {
         <div className="flex items-baseline gap-2 mt-1">
           <span className="text-xl font-medium">PHP</span>
           <span className="text-4xl font-extrabold tracking-tight">
-            {balanceVisible ? "125,450.00" : "••••••••"}
+            {balanceVisible
+              ? balance.toLocaleString("en-PH", { minimumFractionDigits: 2 })
+              : "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"}
           </span>
         </div>
         <div className="mt-8 flex gap-3">
@@ -135,9 +123,9 @@ export function Dashboard() {
           <button className="text-primary text-sm font-bold">See All</button>
         </div>
         <div className="space-y-3">
-          {recentTransactions.map((tx) => (
+          {transactions.slice(0, 5).map((tx) => (
             <div
-              key={tx.title + tx.date}
+              key={tx.id}
               className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-between shadow-sm"
             >
               <div className="flex items-center gap-3">
@@ -156,6 +144,12 @@ export function Dashboard() {
               <p className={`font-bold ${tx.amountColor}`}>{tx.amount}</p>
             </div>
           ))}
+          {transactions.length === 0 && (
+            <div className="text-center py-8 text-slate-400">
+              <span className="material-symbols-outlined text-4xl mb-2 block">receipt_long</span>
+              <p className="text-sm">No recent transactions</p>
+            </div>
+          )}
         </div>
       </div>
     </main>

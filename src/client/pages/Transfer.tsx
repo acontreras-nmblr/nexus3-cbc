@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { recordTransfer, saveFavoriteRecipient, downloadReceipt } from "../mockData";
 
 interface TransferForm {
   fromAccount: string;
@@ -48,6 +49,10 @@ export function Transfer() {
     if (step === 1 && canProceed) {
       setStep(2);
     } else if (step === 2) {
+      const amount = parseFloat(form.amount) || 0;
+      const fee = form.toBank === "cbc" ? 0 : 15;
+      const bankLabel = selectedBank?.label ?? form.toBank;
+      recordTransfer(bankLabel, amount, fee);
       setStep(3);
     }
   }
@@ -58,6 +63,30 @@ export function Transfer() {
     } else if (step === 1) {
       navigate("/");
     }
+  }
+
+  function handleDownloadTransferReceipt() {
+    const amount = parseFloat(form.amount) || 0;
+    const fee = form.toBank === "cbc" ? 0 : 15;
+    const total = amount + fee;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+    const refNo = `CB-${Date.now().toString().slice(-9)}`;
+
+    downloadReceipt({
+      title: "FUND TRANSFER RECEIPT",
+      refNo,
+      date: dateStr,
+      time: timeStr,
+      rows: [
+        { label: "Recipient Bank", value: selectedBank?.label ?? form.toBank },
+        { label: "Account No.", value: form.accountNumber },
+        { label: "Transfer Amount", value: `PHP ${amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}` },
+        { label: "Service Fee", value: `PHP ${fee.toFixed(2)}` },
+      ],
+      total: { label: "Total Amount", value: `PHP ${total.toLocaleString("en-PH", { minimumFractionDigits: 2 })}` },
+    });
   }
 
   return (
@@ -125,11 +154,25 @@ export function Transfer() {
         {step === 3 && (
           <footer className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full max-w-[480px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-4 pb-8 flex flex-col gap-3">
             <div className="flex gap-3">
-              <button className="flex-1 flex items-center justify-center gap-2 h-12 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-sm transition-colors hover:bg-slate-200 dark:hover:bg-slate-700">
+              <button
+                onClick={handleDownloadTransferReceipt}
+                className="flex-1 flex items-center justify-center gap-2 h-12 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-sm transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"
+              >
                 <span className="material-symbols-outlined text-xl">download</span>
                 Download Receipt
               </button>
-              <button className="flex-1 flex items-center justify-center gap-2 h-12 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-sm transition-colors hover:bg-slate-200 dark:hover:bg-slate-700">
+              <button
+                onClick={() => {
+                  const amount = parseFloat(form.amount) || 0;
+                  const text = `I transferred PHP ${amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })} to ${selectedBank?.label ?? form.toBank} (${form.accountNumber}) via Chinabank.`;
+                  if (navigator.share) {
+                    navigator.share({ title: "Transfer Receipt", text });
+                  } else {
+                    navigator.clipboard.writeText(text);
+                  }
+                }}
+                className="flex-1 flex items-center justify-center gap-2 h-12 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-sm transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"
+              >
                 <span className="material-symbols-outlined text-xl">share</span>
                 Share
               </button>
@@ -487,6 +530,32 @@ function StepSuccess({
     hour12: false,
   });
   const refNo = `CB-${Date.now().toString().slice(-9)}`;
+  const [favSaved, setFavSaved] = useState(false);
+
+  function handleToggleFavorite(checked: boolean) {
+    onToggleFavorite(checked);
+    if (checked && selectedBank) {
+      saveFavoriteRecipient({
+        bankValue: form.toBank,
+        bankLabel: selectedBank.label,
+        accountNumber: form.accountNumber,
+        nickname: favoriteNickname,
+      });
+      setFavSaved(true);
+    }
+  }
+
+  function handleSaveFavoriteWithNickname() {
+    if (selectedBank) {
+      saveFavoriteRecipient({
+        bankValue: form.toBank,
+        bankLabel: selectedBank.label,
+        accountNumber: form.accountNumber,
+        nickname: favoriteNickname,
+      });
+      setFavSaved(true);
+    }
+  }
 
   return (
     <main className="flex-1 overflow-y-auto pb-48">
@@ -564,33 +633,47 @@ function StepSuccess({
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary">favorite</span>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${favSaved ? "bg-green-100 dark:bg-green-900/30" : "bg-primary/10"}`}>
+                <span className={`material-symbols-outlined ${favSaved ? "text-green-600" : "text-primary"}`}>
+                  {favSaved ? "check_circle" : "favorite"}
+                </span>
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">Add to Favorites</p>
-                <p className="text-xs text-slate-500">Save for faster future transfers</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">
+                  {favSaved ? "Saved to Favorites!" : "Add to Favorites"}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {favSaved ? "You can find this in your favorites" : "Save for faster future transfers"}
+                </p>
               </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={addToFavorites}
-                onChange={(e) => onToggleFavorite(e.target.checked)}
-              />
-              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
-            </label>
+            {!favSaved && (
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={addToFavorites}
+                  onChange={(e) => handleToggleFavorite(e.target.checked)}
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
+              </label>
+            )}
           </div>
-          {addToFavorites && (
-            <div className="px-4 pb-4 pt-0">
+          {addToFavorites && !favSaved && (
+            <div className="px-4 pb-4 pt-0 flex gap-2">
               <input
                 type="text"
-                className="w-full bg-background-light dark:bg-slate-800 border-none rounded-lg text-sm px-4 py-2.5 focus:ring-1 focus:ring-primary text-slate-900 dark:text-white placeholder:text-slate-400"
+                className="flex-1 bg-background-light dark:bg-slate-800 border-none rounded-lg text-sm px-4 py-2.5 focus:ring-1 focus:ring-primary text-slate-900 dark:text-white placeholder:text-slate-400"
                 placeholder="Set a nickname (e.g. Rent, Mom)"
                 value={favoriteNickname}
                 onChange={(e) => onFavoriteNicknameChange(e.target.value)}
               />
+              <button
+                onClick={handleSaveFavoriteWithNickname}
+                className="bg-primary text-white text-xs font-bold px-4 py-2.5 rounded-lg"
+              >
+                Save
+              </button>
             </div>
           )}
         </div>

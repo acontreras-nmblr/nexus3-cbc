@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { recordBuyLoad, saveFavoriteContact, downloadReceipt } from "../mockData";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -49,6 +50,7 @@ interface BuyLoadForm {
 export function BuyLoad() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("details");
+  const [earnedPoints, setEarnedPoints] = useState(0);
   const [form, setForm] = useState<BuyLoadForm>({
     network: "globe",
     mobileNumber: "",
@@ -110,6 +112,7 @@ export function BuyLoad() {
             network={selectedNetwork}
             mobileNumber={form.mobileNumber}
             amount={amount}
+            earnedPoints={earnedPoints}
           />
         )}
 
@@ -131,7 +134,13 @@ export function BuyLoad() {
           <div className="p-4 bg-white dark:bg-background-dark border-t border-slate-100 dark:border-slate-800">
             <div className="flex flex-col gap-3">
               <button
-                onClick={() => setStep("success")}
+                onClick={() => {
+                  if (selectedNetwork) {
+                    const pts = recordBuyLoad(selectedNetwork.name, amount);
+                    setEarnedPoints(pts);
+                  }
+                  setStep("success");
+                }}
                 className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-transform active:scale-[0.98]"
               >
                 Confirm & Buy Load
@@ -156,6 +165,7 @@ export function BuyLoad() {
             <button
               onClick={() => {
                 setStep("details");
+                setEarnedPoints(0);
                 setForm({
                   network: "globe",
                   mobileNumber: "",
@@ -538,15 +548,40 @@ function SuccessStep({
   network,
   mobileNumber,
   amount,
+  earnedPoints,
 }: {
   network: Network;
   mobileNumber: string;
   amount: number;
+  earnedPoints: number;
 }) {
   const now = new Date();
   const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
   const refNo = `CBC-${Date.now().toString().slice(-8)}`;
+  const [contactSaved, setContactSaved] = useState(false);
+
+  function handleSaveContact() {
+    saveFavoriteContact({ network: network.name, mobileNumber });
+    setContactSaved(true);
+  }
+
+  function handleDownloadReceipt() {
+    downloadReceipt({
+      title: "BUY LOAD RECEIPT",
+      refNo,
+      date: dateStr,
+      time: timeStr,
+      rows: [
+        { label: "Network", value: network.name },
+        { label: "Mobile Number", value: mobileNumber },
+        { label: "Load Amount", value: `PHP ${amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}` },
+        { label: "Service Fee", value: "FREE" },
+        ...(earnedPoints > 0 ? [{ label: "Rewards Earned", value: `+${earnedPoints} pts` }] : []),
+      ],
+      total: { label: "Total Amount", value: `PHP ${amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}` },
+    });
+  }
 
   return (
     <main className="flex-1 overflow-y-auto flex flex-col">
@@ -562,6 +597,16 @@ function SuccessStep({
           Your load has been delivered successfully.
         </p>
       </div>
+
+      {/* Rewards Earned Banner */}
+      {earnedPoints > 0 && (
+        <div className="mx-4 mb-2 flex items-center gap-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3">
+          <span className="material-symbols-outlined text-green-600 dark:text-green-400">stars</span>
+          <p className="text-green-700 dark:text-green-400 text-sm font-semibold">
+            You earned <span className="font-extrabold">{earnedPoints} points</span> (2% reward)!
+          </p>
+        </div>
+      )}
 
       {/* Amount */}
       <div className="px-4 py-6 text-center">
@@ -611,9 +656,32 @@ function SuccessStep({
         </div>
       </div>
 
+      {/* Save Contact to Favorites */}
+      <div className="px-4 mb-6">
+        <button
+          onClick={handleSaveContact}
+          disabled={contactSaved}
+          className={`w-full flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed transition-colors ${
+            contactSaved
+              ? "border-green-300 bg-green-50 dark:bg-green-900/20 text-green-600 cursor-default"
+              : "border-primary/30 text-primary hover:bg-primary/5"
+          }`}
+        >
+          <span className="material-symbols-outlined">
+            {contactSaved ? "check_circle" : "contact_phone"}
+          </span>
+          <span className="font-bold">
+            {contactSaved ? "Contact Saved!" : "Save Number to Favorites"}
+          </span>
+        </button>
+      </div>
+
       {/* Download Receipt */}
       <div className="px-4 mb-4 flex justify-center">
-        <button className="flex items-center gap-2 text-primary font-bold text-sm">
+        <button
+          onClick={handleDownloadReceipt}
+          className="flex items-center gap-2 text-primary font-bold text-sm"
+        >
           <span className="material-symbols-outlined text-[20px]">download</span>
           Download Receipt
         </button>

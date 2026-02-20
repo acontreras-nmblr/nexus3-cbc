@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getRewards, getTotalPoints, redeemVoucher } from "../mockData";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -10,16 +11,6 @@ interface Voucher {
   brand: string;
   icon: string;
   cost: number;
-}
-
-interface HistoryItem {
-  id: string;
-  icon: string;
-  iconBg: string;
-  iconColor: string;
-  title: string;
-  date: string;
-  points: number;
 }
 
 type TabFilter = "all" | "earned" | "redeemed";
@@ -35,68 +26,9 @@ const vouchers: Voucher[] = [
   { id: "v4", brand: "Jollibee", icon: "restaurant", cost: 300 },
 ];
 
-const rewardsHistory: HistoryItem[] = [
-  {
-    id: "h1",
-    icon: "add_circle",
-    iconBg: "bg-green-100 dark:bg-green-900/30",
-    iconColor: "text-green-600 dark:text-green-400",
-    title: "Credit Card Spend",
-    date: "Oct 24, 2023",
-    points: 50,
-  },
-  {
-    id: "h2",
-    icon: "shopping_bag",
-    iconBg: "bg-slate-100 dark:bg-slate-700/50",
-    iconColor: "text-slate-600 dark:text-slate-400",
-    title: "Starbucks Voucher",
-    date: "Oct 20, 2023",
-    points: -500,
-  },
-  {
-    id: "h3",
-    icon: "add_circle",
-    iconBg: "bg-green-100 dark:bg-green-900/30",
-    iconColor: "text-green-600 dark:text-green-400",
-    title: "Grocery Reward",
-    date: "Oct 18, 2023",
-    points: 120,
-  },
-  {
-    id: "h4",
-    icon: "stars",
-    iconBg: "bg-green-100 dark:bg-green-900/30",
-    iconColor: "text-green-600 dark:text-green-400",
-    title: "Tier Bonus",
-    date: "Oct 01, 2023",
-    points: 200,
-  },
-  {
-    id: "h5",
-    icon: "shopping_bag",
-    iconBg: "bg-slate-100 dark:bg-slate-700/50",
-    iconColor: "text-slate-600 dark:text-slate-400",
-    title: "Grab Voucher",
-    date: "Sep 25, 2023",
-    points: -500,
-  },
-  {
-    id: "h6",
-    icon: "add_circle",
-    iconBg: "bg-green-100 dark:bg-green-900/30",
-    iconColor: "text-green-600 dark:text-green-400",
-    title: "Bill Payment Reward",
-    date: "Sep 20, 2023",
-    points: 80,
-  },
-];
-
-const TOTAL_POINTS = 1250;
 const TIER = "Gold";
 const NEXT_TIER = "Platinum";
-const POINTS_TO_NEXT = 750;
-const TIER_PROGRESS = 65;
+const PLATINUM_THRESHOLD = 2000;
 
 /* ------------------------------------------------------------------ */
 /*  Main Component                                                     */
@@ -106,12 +38,25 @@ export function Rewards() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabFilter>("all");
   const [showRedeemDialog, setShowRedeemDialog] = useState<Voucher | null>(null);
+  const [, setRefresh] = useState(0);
+
+  const totalPoints = getTotalPoints();
+  const rewardsHistory = getRewards();
+
+  const pointsToNext = Math.max(0, PLATINUM_THRESHOLD - totalPoints);
+  const tierProgress = Math.min(100, Math.round((totalPoints / PLATINUM_THRESHOLD) * 100));
 
   const filteredHistory = rewardsHistory.filter((item) => {
     if (activeTab === "earned") return item.points > 0;
     if (activeTab === "redeemed") return item.points < 0;
     return true;
   });
+
+  function handleRedeem(voucher: Voucher) {
+    redeemVoucher(voucher.brand, voucher.cost);
+    setShowRedeemDialog(null);
+    setRefresh((n) => n + 1);
+  }
 
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen text-slate-900 dark:text-slate-100 font-display">
@@ -145,19 +90,19 @@ export function Rewards() {
 
               <p className="text-sm font-medium opacity-90 mb-1">Total Rewards Balance</p>
               <h2 className="text-4xl font-extrabold tracking-tight mb-2">
-                {TOTAL_POINTS.toLocaleString()}{" "}
+                {totalPoints.toLocaleString()}{" "}
                 <span className="text-xl font-medium">Points</span>
               </h2>
 
               <div className="mt-6 space-y-3">
                 <div className="flex justify-between text-xs font-semibold">
                   <span>{TIER} Member Tier</span>
-                  <span>{POINTS_TO_NEXT} pts to {NEXT_TIER}</span>
+                  <span>{pointsToNext > 0 ? `${pointsToNext} pts to ${NEXT_TIER}` : `${NEXT_TIER} Achieved!`}</span>
                 </div>
                 <div className="w-full bg-white/20 h-2 rounded-full overflow-hidden">
                   <div
                     className="bg-white h-full rounded-full transition-all duration-500"
-                    style={{ width: `${TIER_PROGRESS}%` }}
+                    style={{ width: `${tierProgress}%` }}
                   />
                 </div>
               </div>
@@ -187,7 +132,7 @@ export function Rewards() {
                   </p>
                   <button
                     onClick={() => setShowRedeemDialog(v)}
-                    disabled={TOTAL_POINTS < v.cost}
+                    disabled={totalPoints < v.cost}
                     className="w-full bg-primary text-white text-xs font-bold py-2 rounded-lg transition-colors hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Redeem
@@ -269,8 +214,8 @@ export function Rewards() {
       {showRedeemDialog && (
         <RedeemDialog
           voucher={showRedeemDialog}
-          totalPoints={TOTAL_POINTS}
-          onConfirm={() => setShowRedeemDialog(null)}
+          totalPoints={totalPoints}
+          onConfirm={() => handleRedeem(showRedeemDialog)}
           onCancel={() => setShowRedeemDialog(null)}
         />
       )}
