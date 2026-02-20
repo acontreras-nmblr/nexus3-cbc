@@ -1,22 +1,27 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { MainLayout } from "./components/layout/MainLayout.js";
+import { Dashboard } from "./pages/Dashboard.js";
+import { Transfer } from "./pages/Transfer.js";
+import { PayBills } from "./pages/PayBills.js";
+import { BuyLoad } from "./pages/BuyLoad.js";
+import { Cards } from "./pages/Cards.js";
+import { ApplyCard } from "./pages/ApplyCard.js";
+import { Rewards } from "./pages/Rewards.js";
 
 export const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/cards" element={<Cards />} />
+        </Route>
+        <Route path="/transfer" element={<Transfer />} />
+        <Route path="/pay-bills" element={<PayBills />} />
+        <Route path="/buy-load" element={<BuyLoad />} />
+        <Route path="/apply-card" element={<ApplyCard />} />
+        <Route path="/rewards" element={<Rewards />} />
       </Routes>
     </BrowserRouter>
-  );
-};
-
-const Home = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Nexus3 CBC</h1>
-        <p className="text-gray-600">Application is running.</p>
-      </div>
-    </div>
   );
 };
